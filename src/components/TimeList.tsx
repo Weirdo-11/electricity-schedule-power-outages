@@ -58,7 +58,7 @@ const TimeList: FC<Props> = ({ queueId, ranges }) => {
 	const past: RangeItem[] = [];
 
 	ranges.forEach((range, index) => {
-		const start = timeToMinutes(range.from);
+		//const start = timeToMinutes(range.from);
 		const end = timeToMinutes(range.to);
 		const isActive = index === activeIndex;
 
