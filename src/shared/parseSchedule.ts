@@ -48,11 +48,11 @@ const mergeRanges = (ranges: TimeRange[]): TimeRange[] => {
 	return result;
 };
 
-export const parseSchedule = (raw: string): Schedule => {
+export const parseSchedule = (raw: string): Schedule['ranges'] => {
 	const text = stripLinks(normalizeText(raw));
 	const lines = text.split(/\r?\n/);
 
-	const schedule: Schedule = {};
+	const schedule: Schedule['ranges'] = {};
 
 	for (const line of lines) {
 		const trimmed = line.trim();

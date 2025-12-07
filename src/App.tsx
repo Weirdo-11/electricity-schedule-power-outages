@@ -20,18 +20,19 @@ import {
 	setNotificationsFlag,
 } from './shared/notificationStore';
 
-const getInitialScheduleState = () => {
+const getInitialScheduleState = (): Schedule => {
 	const saved = loadSchedule();
 	if (!saved) {
 		return {
-			schedule: {} as Schedule,
-			selectedQueue: null as string | null,
+			ranges: {} as Schedule['ranges'],
+			selectedRange: null as string | null,
 		};
 	}
-	const firstKey = Object.keys(saved)[0] ?? null;
+	const firstKey =
+		saved?.selectedRange ?? Object.keys(saved.ranges || {})[0] ?? null;
 	return {
-		schedule: saved,
-		selectedQueue: firstKey,
+		ranges: saved?.ranges,
+		selectedRange: firstKey,
 	};
 };
 
@@ -44,32 +45,43 @@ const getInitialNotificationsEnabled = (): boolean => {
 const App = () => {
 	const initial = getInitialScheduleState();
 
+	const [displaySelectMenu, setDisplaySelectMenu] = useState<boolean>(false);
+
 	const [rawText, setRawText] = useState('');
-	const [schedule, setSchedule] = useState<Schedule>(initial.schedule);
+	const [schedule, setSchedule] = useState<Schedule>(initial);
 	const [selectedQueue, setSelectedQueue] = useState<string | null>(
-		initial.selectedQueue
+		initial?.selectedRange || null
 	);
 	const [notificationsEnabled, setNotificationsEnabled] = useState(
 		getInitialNotificationsEnabled
 	);
 
+	const onSelectQueue = (key: string) => {
+		setSelectedQueue(key);
+		saveSchedule({ ...schedule, selectedRange: key });
+	};
+
 	const queues = useMemo(
-		() => Object.keys(schedule).sort((a, b) => a.localeCompare(b, 'uk')),
-		[schedule]
+		() =>
+			Object.keys(schedule?.ranges || {}).sort((a, b) =>
+				a.localeCompare(b, 'uk')
+			),
+		[schedule?.ranges]
 	);
 
 	const currentRanges = useMemo(() => {
 		if (!selectedQueue) return [];
-		return schedule[selectedQueue] ?? [];
-	}, [schedule, selectedQueue]);
+		return schedule?.ranges?.[selectedQueue] ?? [];
+	}, [schedule?.ranges, selectedQueue]);
 
 	const handleSaveSchedule = () => {
 		if (!rawText.trim()) return;
 		const parsed = parseSchedule(rawText);
-		setSchedule(parsed);
-		saveSchedule(parsed);
 		const firstKey = Object.keys(parsed)[0] ?? null;
+		setSchedule({ ranges: parsed, selectedRange: firstKey });
+		saveSchedule({ ranges: parsed, selectedRange: firstKey });
 		setSelectedQueue(firstKey);
+		setDisplaySelectMenu(false);
 	};
 
 	const handleEnableNotifications = async () => {
@@ -89,7 +101,7 @@ const App = () => {
 
 		const checkAndNotify = () => {
 			if (!selectedQueue) return;
-			const ranges = schedule[selectedQueue];
+			const ranges = schedule?.ranges?.[selectedQueue];
 			if (!ranges || !ranges.length) return;
 
 			const now = new Date();
@@ -128,26 +140,35 @@ const App = () => {
 		return () => {
 			window.clearInterval(id);
 		};
-	}, [notificationsEnabled, schedule, selectedQueue]);
+	}, [notificationsEnabled, schedule?.ranges, selectedQueue]);
 
 	return (
 		<div className='flex min-h-screen justify-center bg-slate-950 px-3 py-4 text-slate-50'>
 			<main className='flex w-full max-w-md flex-col gap-3'>
-				<InputForm
-					value={rawText}
-					onChange={setRawText}
-					onParse={handleSaveSchedule}
-				/>
-				<QueueSelector
-					queues={queues}
-					selected={selectedQueue}
-					onSelect={setSelectedQueue}
-				/>
+				<TimeList queueId={selectedQueue} ranges={currentRanges} />
 				<NotificationToggle
 					enabled={notificationsEnabled}
 					onEnable={handleEnableNotifications}
 				/>
-				<TimeList queueId={selectedQueue} ranges={currentRanges} />
+				<QueueSelector
+					queues={queues}
+					selected={selectedQueue}
+					onSelect={onSelectQueue}
+				/>
+				{displaySelectMenu ? (
+					<InputForm
+						value={rawText}
+						onChange={setRawText}
+						onParse={handleSaveSchedule}
+					/>
+				) : (
+					<button
+						className='mt-3 w-full rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 active:scale-[0.98]'
+						onClick={() => setDisplaySelectMenu(true)}
+					>
+						Оновити графік
+					</button>
+				)}
 			</main>
 		</div>
 	);

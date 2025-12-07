@@ -3,4 +3,7 @@ export type TimeRange = {
 	to: string;
 };
 
-export type Schedule = Record<string, TimeRange[]>;
+export type Schedule = {
+	ranges: Record<string, TimeRange[]>
+	selectedRange?: string | null
+};
