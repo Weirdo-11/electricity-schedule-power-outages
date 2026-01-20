@@ -4,6 +4,8 @@ export type TimeRange = {
 };
 
 export type Schedule = {
-	ranges: Record<string, TimeRange[]>
-	selectedRange?: string | null
+	ranges: Record<string, TimeRange[]>;
+	selectedRange?: string | null;
+	without?: string;
+	with?: string;
 };

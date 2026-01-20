@@ -19,6 +19,8 @@ import {
 	getNotificationsFlag,
 	setNotificationsFlag,
 } from './shared/notificationStore';
+import { calcPowerStats } from './shared/stats';
+import QueueStats from './components/QueueStats';
 
 const getInitialScheduleState = (): Schedule => {
 	const saved = loadSchedule();
@@ -50,10 +52,10 @@ const App = () => {
 	const [rawText, setRawText] = useState('');
 	const [schedule, setSchedule] = useState<Schedule>(initial);
 	const [selectedQueue, setSelectedQueue] = useState<string | null>(
-		initial?.selectedRange || null
+		initial?.selectedRange || null,
 	);
 	const [notificationsEnabled, setNotificationsEnabled] = useState(
-		getInitialNotificationsEnabled
+		getInitialNotificationsEnabled,
 	);
 
 	const onSelectQueue = (key: string) => {
@@ -64,15 +66,19 @@ const App = () => {
 	const queues = useMemo(
 		() =>
 			Object.keys(schedule?.ranges || {}).sort((a, b) =>
-				a.localeCompare(b, 'uk')
+				a.localeCompare(b, 'uk'),
 			),
-		[schedule?.ranges]
+		[schedule?.ranges],
 	);
 
 	const currentRanges = useMemo(() => {
 		if (!selectedQueue) return [];
 		return schedule?.ranges?.[selectedQueue] ?? [];
 	}, [schedule?.ranges, selectedQueue]);
+
+	const stats = useMemo(() => {
+		return calcPowerStats(currentRanges);
+	}, [currentRanges]);
 
 	const handleSaveSchedule = () => {
 		if (!rawText.trim()) return;
@@ -146,6 +152,7 @@ const App = () => {
 		<div className='flex min-h-screen justify-center bg-slate-950 px-3 py-4 text-slate-50'>
 			<main className='flex w-full max-w-md flex-col gap-3'>
 				<TimeList queueId={selectedQueue} ranges={currentRanges} />
+				<QueueStats without={stats.without} withValue={stats.with} />
 				<NotificationToggle
 					enabled={notificationsEnabled}
 					onEnable={handleEnableNotifications}
